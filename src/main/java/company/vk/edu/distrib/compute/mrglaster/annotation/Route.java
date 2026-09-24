@@ -11,4 +11,6 @@ public @interface Route {
     String method();
 
     String path();
+
+    boolean requiresAuthorization();
 }

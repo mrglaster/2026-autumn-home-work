@@ -1,7 +1,9 @@
-package company.vk.edu.distrib.compute.mrglaster.controller;
+package company.vk.edu.distrib.compute.mrglaster.controller.external;
 
 import com.sun.net.httpserver.HttpExchange;
 import company.vk.edu.distrib.compute.mrglaster.annotation.Route;
+import company.vk.edu.distrib.compute.mrglaster.controller.model.BaseController;
+import company.vk.edu.distrib.compute.mrglaster.controller.model.StatusCode;
 import company.vk.edu.distrib.compute.mrglaster.dao.UrlDao;
 import company.vk.edu.distrib.compute.mrglaster.service.ShortLinksGeneratorService;
 
@@ -13,7 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public class LinkController {
+public class LinkController extends BaseController {
 
     private final UrlDao urlDao;
     private final ShortLinksGeneratorService shortLinksGeneratorService;
@@ -23,21 +25,16 @@ public class LinkController {
         this.shortLinksGeneratorService = new ShortLinksGeneratorService(baseUrl);
     }
 
-    @Route(method = "GET", path = "/v0/links/{id}")
+    @Route(method = "GET", path = "/v0/links/{id}", requiresAuthorization = true)
     public void getFullUrl(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
-
         try {
             if (!isValidID(id)) {
                 exchange.sendResponseHeaders(422, -1);
                 return;
             }
             String longUrl = urlDao.get(id);
-            byte[] responseBytes = longUrl.getBytes(StandardCharsets.UTF_8);
-
-            exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            exchange.getResponseBody().write(responseBytes);
+            this.sendStringResponse(exchange, longUrl, StatusCode.HTTP_OK);
         } catch (NoSuchElementException e) {
             exchange.sendResponseHeaders(404, -1);
         } catch (IllegalArgumentException | IOException e) {
@@ -45,7 +42,7 @@ public class LinkController {
         }
     }
 
-    @Route(method = "GET", path = "/{id}")
+    @Route(method = "GET", path = "/{id}", requiresAuthorization = true)
     public void redirectLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         try {
@@ -64,7 +61,7 @@ public class LinkController {
         }
     }
 
-    @Route(method = "POST", path = "/v0/links")
+    @Route(method = "POST", path = "/v0/links", requiresAuthorization = true)
     public void createLink(HttpExchange exchange) throws IOException, NoSuchAlgorithmException {
         String longUrl = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8).trim();
         if (longUrl.isEmpty() || !isValidUrl(longUrl)) {
@@ -74,13 +71,10 @@ public class LinkController {
         String shortId = shortLinksGeneratorService.generateLinkID(longUrl);
         String shortUrl = shortLinksGeneratorService.generateShortURL(shortId);
         urlDao.upsert(shortId, longUrl);
-        byte[] responseBytes = shortUrl.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
-        exchange.sendResponseHeaders(201, responseBytes.length);
-        exchange.getResponseBody().write(responseBytes);
+        this.sendStringResponse(exchange, shortUrl, StatusCode.HTTP_CREATED);
     }
 
-    @Route(method = "PUT", path = "/v0/links/{id}")
+    @Route(method = "PUT", path = "/v0/links/{id}", requiresAuthorization = true)
     public void updateLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         try {
@@ -91,27 +85,23 @@ public class LinkController {
             }
             urlDao.get(id);
             urlDao.upsert(id, newLongUrl);
-            byte[] responseBytes = "OK".getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            exchange.getResponseBody().write(responseBytes);
+            this.sendStringResponse(exchange, "OK", StatusCode.HTTP_OK);
         } catch (NoSuchElementException e) {
-            exchange.sendResponseHeaders(404, -1);
+            this.sendStatusCodeResponse(exchange, StatusCode.HTTP_NOT_FOUND);
         } catch (IllegalArgumentException | IOException e) {
-            exchange.sendResponseHeaders(500, -1);
+            this.sendStatusCodeResponse(exchange, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
-    @Route(method = "DELETE", path = "/v0/links/{id}")
+    @Route(method = "DELETE", path = "/v0/links/{id}", requiresAuthorization = true)
     public void deleteLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         if (!isValidID(id)) {
-            exchange.sendResponseHeaders(422, -1);
+            this.sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
             return;
         }
         urlDao.delete(id);
-        exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
-        exchange.sendResponseHeaders(202, -1);
+        this.sendStatusCodeResponse(exchange, StatusCode.HTTP_ACCEPTED);
     }
 
     private boolean isValidUrl(String urlString) {

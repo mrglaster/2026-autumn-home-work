@@ -3,6 +3,7 @@ package company.vk.edu.distrib.compute.mrglaster.network;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import company.vk.edu.distrib.compute.mrglaster.annotation.Route;
+import company.vk.edu.distrib.compute.mrglaster.service.AuthorizationService;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -14,6 +15,11 @@ import java.util.Map;
 public class ControllerManager {
 
     private final List<RouteDefinition> routes = new ArrayList<>();
+    private final AuthorizationService authService;
+
+    public ControllerManager(AuthorizationService authService) {
+        this.authService = authService;
+    }
 
     private static String[] splitPath(String path) {
         if (path == null || path.isEmpty() || path.equals("/")) {
@@ -36,7 +42,7 @@ public class ControllerManager {
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Route.class)) {
                 Route route = method.getAnnotation(Route.class);
-                routes.add(new RouteDefinition(route.method().toUpperCase(), route.path(), method, controller));
+                routes.add(new RouteDefinition(route.method().toUpperCase(), route.path(), route.requiresAuthorization(), method, controller));
             }
         }
     }
@@ -49,6 +55,20 @@ public class ControllerManager {
             RouteMatch match = findMatchingRoute(requestMethod, requestPath);
 
             if (match != null) {
+                if (match.route.requiresAuthorization) {
+                    try {
+                        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                        if (!authService.checkBasicAuth(authHeader)) {
+                            exchange.sendResponseHeaders(401, -1);
+                            exchange.close();
+                            return;
+                        }
+                    } catch (Exception e) {
+                        exchange.sendResponseHeaders(401, -1);
+                        exchange.close();
+                        return;
+                    }
+                }
                 invokeHandler(match, exchange);
             } else {
                 exchange.sendResponseHeaders(404, -1);
@@ -58,7 +78,6 @@ public class ControllerManager {
     }
 
     private RouteMatch findMatchingRoute(String method, String path) {
-        // Используем единый метод нормализации для входящего пути
         String[] pathSegments = splitPath(path);
 
         for (RouteDefinition route : routes) {
@@ -127,10 +146,19 @@ public class ControllerManager {
         }
     }
 
-    private record RouteDefinition(String httpMethod, String[] pathSegments, Method method, Object instance) {
-        RouteDefinition(String httpMethod, String path, Method method, Object instance) {
-            // Используем тот же метод нормализации для пути из аннотации
-            this(httpMethod, splitPath(path), method, instance);
+    private static class RouteDefinition {
+        final String httpMethod;
+        final String[] pathSegments;
+        final boolean requiresAuthorization;
+        final Method method;
+        final Object instance;
+
+        RouteDefinition(String httpMethod, String path, boolean requiresAuthorization, Method method, Object instance) {
+            this.httpMethod = httpMethod;
+            this.requiresAuthorization = requiresAuthorization;
+            this.method = method;
+            this.instance = instance;
+            this.pathSegments = splitPath(path);
         }
     }
 
