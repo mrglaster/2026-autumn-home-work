@@ -17,7 +17,6 @@ public class UrlShortenerServiceFactoryArgumentsProvider implements ArgumentsPro
 
     private final Collection<Class<? extends AbstractHttpServiceFactory<? extends UrlShortenerService>>> factories =
         List.of(
-                EPUrlShortenerServiceFactory.class
         );
 
     @Override

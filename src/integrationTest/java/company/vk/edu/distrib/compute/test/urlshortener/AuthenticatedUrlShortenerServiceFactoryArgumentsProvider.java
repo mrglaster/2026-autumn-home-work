@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import company.vk.edu.distrib.compute.AbstractHttpServiceFactory;
+import company.vk.edu.distrib.compute.mrglaster.factory.EPUrlShortenerServiceFactory;
 import company.vk.edu.distrib.compute.urlshortener.DummyUrlShortenerServiceFactory;
 import company.vk.edu.distrib.compute.urlshortener.UrlShortenerService;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -16,8 +17,9 @@ import org.junit.platform.commons.util.ReflectionUtils;
 public class AuthenticatedUrlShortenerServiceFactoryArgumentsProvider implements ArgumentsProvider {
 
     private final Collection<Class<? extends AbstractHttpServiceFactory<? extends UrlShortenerService>>> factories =
-        List.of(
-        );
+            List.of(
+                    EPUrlShortenerServiceFactory.class
+            );
 
     @Override
     public Stream<? extends Arguments> provideArguments(ParameterDeclarations parameters, ExtensionContext context) {

@@ -1,9 +1,11 @@
 package company.vk.edu.distrib.compute.mrglaster.service;
 
 import com.sun.net.httpserver.HttpServer;
-import company.vk.edu.distrib.compute.mrglaster.controller.LinkController;
-import company.vk.edu.distrib.compute.mrglaster.controller.StatusController;
+import company.vk.edu.distrib.compute.mrglaster.controller.external.LinkController;
+import company.vk.edu.distrib.compute.mrglaster.controller.external.StatusController;
+import company.vk.edu.distrib.compute.mrglaster.controller.internal.UserController;
 import company.vk.edu.distrib.compute.mrglaster.dao.UrlDao;
+import company.vk.edu.distrib.compute.mrglaster.dao.UserDao;
 import company.vk.edu.distrib.compute.mrglaster.network.ControllerManager;
 
 import java.io.IOException;
@@ -22,11 +24,16 @@ public class EPUrlShortenerService implements company.vk.edu.distrib.compute.url
         this.httpServer = HttpServer.create(new InetSocketAddress(this.port), 0);
 
         String baseUrl = "http://127.0.0.1:" + port;
-        UrlDao urlDao = new UrlDao();
 
-        ControllerManager routingManager = new ControllerManager();
+        UrlDao urlDao = new UrlDao();
+        UserDao userDao = new UserDao();
+
+        AuthorizationService authService = new AuthorizationService(userDao);
+
+        ControllerManager routingManager = new ControllerManager(authService);
         routingManager.addController(new StatusController());
         routingManager.addController(new LinkController(urlDao, baseUrl));
+        routingManager.addController(new UserController(userDao));
         routingManager.register(httpServer);
     }
 
