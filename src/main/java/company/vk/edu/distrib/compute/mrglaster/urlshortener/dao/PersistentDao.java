@@ -26,7 +26,6 @@ public class PersistentDao implements Dao<String> {
         loadFromFile();
     }
 
-
     private void loadFromFile() throws IOException {
         log.seek(0);
         while (log.getFilePointer() < log.length()) {
@@ -66,8 +65,8 @@ public class PersistentDao implements Dao<String> {
         lock.lock();
         try {
             storage.put(key, value);
-            modifiedKeys.add(key);      // Помечаем как измененный
-            removedKeys.remove(key);    // Убираем из удаленных, если он там был
+            modifiedKeys.add(key);
+            removedKeys.remove(key);
         } finally {
             lock.unlock();
         }
@@ -81,8 +80,8 @@ public class PersistentDao implements Dao<String> {
         lock.lock();
         try {
             storage.remove(key);
-            removedKeys.add(key);       // Помечаем как удаленный
-            modifiedKeys.remove(key);   // Убираем из измененных, если он там был
+            removedKeys.add(key);
+            modifiedKeys.remove(key);
         } finally {
             lock.unlock();
         }

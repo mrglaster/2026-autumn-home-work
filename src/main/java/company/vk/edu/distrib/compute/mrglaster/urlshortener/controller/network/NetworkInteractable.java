@@ -19,5 +19,4 @@ public interface NetworkInteractable {
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
         exchange.sendResponseHeaders(statusCode.getStatusCode(), -1);
     }
-
 }

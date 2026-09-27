@@ -9,7 +9,6 @@ import company.vk.edu.distrib.compute.mrglaster.urlshortener.service.ShortLinksG
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -29,7 +28,7 @@ public class LinkController implements NetworkInteractable {
     public void getFullUrl(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         try {
-            if (!isValidID(id)) {
+            if (isInvalidId(id)) {
                 sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
                 return;
             }
@@ -46,7 +45,7 @@ public class LinkController implements NetworkInteractable {
     public void redirectLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         try {
-            if (!isValidID(id)) {
+            if (isInvalidId(id)) {
                 sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
                 return;
             }
@@ -62,7 +61,7 @@ public class LinkController implements NetworkInteractable {
     @Route(method = "POST", path = "/v0/links", requiresAuthorization = true)
     public void createLink(HttpExchange exchange) throws IOException, NoSuchAlgorithmException {
         String longUrl = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8).trim();
-        if (longUrl.isEmpty() || !isValidUrl(longUrl)) {
+        if (longUrl.isEmpty() || isInvalidUrl(longUrl)) {
             sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
             return;
         }
@@ -77,7 +76,7 @@ public class LinkController implements NetworkInteractable {
         String id = pathParams.get("id");
         try {
             String newLongUrl = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8).trim();
-            if (!isValidUrl(newLongUrl) || !isValidID(id)) {
+            if (isInvalidUrl(newLongUrl) || isInvalidId(id)) {
                 sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
                 return;
             }
@@ -94,7 +93,7 @@ public class LinkController implements NetworkInteractable {
     @Route(method = "DELETE", path = "/v0/links/{id}", requiresAuthorization = true)
     public void deleteLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
-        if (!isValidID(id)) {
+        if (isInvalidId(id)) {
             sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
             return;
         }
@@ -102,17 +101,16 @@ public class LinkController implements NetworkInteractable {
         sendStatusCodeResponse(exchange, StatusCode.HTTP_ACCEPTED);
     }
 
-    private boolean isValidUrl(String urlString) {
+    private boolean isInvalidUrl(String urlString) {
         try {
-            URL uri = URI.create(urlString).toURL();
-            return true;
-        } catch (Exception e) {
+            assert !URI.create(urlString).toURL().toString().isEmpty();
             return false;
+        } catch (Exception e) {
+            return true;
         }
     }
 
-    private boolean isValidID(String id) {
-        if (id == null) return false;
-        return id.matches("[0-9a-zA-Z]{10}");
+    private boolean isInvalidId(String id) {
+        return id == null || !id.matches("[0-9a-zA-Z]{10}");
     }
 }

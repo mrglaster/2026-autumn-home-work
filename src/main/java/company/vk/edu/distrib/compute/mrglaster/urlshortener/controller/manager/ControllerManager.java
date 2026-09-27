@@ -1,18 +1,20 @@
-package company.vk.edu.distrib.compute.mrglaster.urlshortener.network;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.manager;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.annotation.Route;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.enums.StatusCode;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.network.NetworkInteractable;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.service.AuthorizationService;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ControllerManager {
+public class ControllerManager implements NetworkInteractable {
 
     private final List<RouteDefinition> routes = new ArrayList<>();
     private final AuthorizationService authService;
@@ -21,20 +23,21 @@ public class ControllerManager {
         this.authService = authService;
     }
 
-    private static String[] splitPath(String path) {
-        if (path == null || path.isEmpty() || path.equals("/")) {
+    private static String[] splitPath(String urlPath) {
+        String processableUrlPath = urlPath;
+        if (processableUrlPath == null || processableUrlPath.isEmpty() || "/".equals(processableUrlPath)) {
             return new String[0];
         }
-        if (path.startsWith("/")) {
-            path = path.substring(1);
+        if (processableUrlPath.startsWith("/")) {
+            processableUrlPath = processableUrlPath.substring(1);
         }
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() - 1);
+        if (processableUrlPath.endsWith("/")) {
+            processableUrlPath = processableUrlPath.substring(0, processableUrlPath.length() - 1);
         }
-        if (path.isEmpty()) {
+        if (processableUrlPath.isEmpty()) {
             return new String[0];
         }
-        return path.split("/");
+        return processableUrlPath.split("/");
     }
 
     public void addController(Object controller) {
@@ -42,7 +45,10 @@ public class ControllerManager {
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Route.class)) {
                 Route route = method.getAnnotation(Route.class);
-                routes.add(new RouteDefinition(route.method().toUpperCase(), route.path(), route.requiresAuthorization(), method, controller));
+                routes.add(new RouteDefinition(route.method().toUpperCase(),
+                        route.path(),
+                        route.requiresAuthorization(),
+                        method, controller));
             }
         }
     }
@@ -59,13 +65,11 @@ public class ControllerManager {
                     try {
                         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
                         if (!authService.checkBasicAuth(authHeader)) {
-                            exchange.sendResponseHeaders(401, -1);
-                            exchange.close();
+                            sendStatusCodeResponse(exchange, StatusCode.HTTP_UNAUTHORIZED);
                             return;
                         }
                     } catch (Exception e) {
-                        exchange.sendResponseHeaders(401, -1);
-                        exchange.close();
+                        sendStatusCodeResponse(exchange, StatusCode.HTTP_UNAUTHORIZED);
                         return;
                     }
                 }
@@ -81,10 +85,10 @@ public class ControllerManager {
         String[] pathSegments = splitPath(path);
 
         for (RouteDefinition route : routes) {
-            if (!route.httpMethod.equals(method)) continue;
-            if (route.pathSegments.length != pathSegments.length) continue;
-
-            Map<String, String> extractedParams = new HashMap<>();
+            if (!route.httpMethod.equals(method) || route.pathSegments.length != pathSegments.length) {
+                continue;
+            }
+            Map<String, String> extractedParams = new ConcurrentHashMap<>();
             boolean isMatch = true;
 
             for (int i = 0; i < route.pathSegments.length; i++) {
@@ -107,42 +111,35 @@ public class ControllerManager {
         return null;
     }
 
-    private void invokeHandler(RouteMatch match, HttpExchange exchange) {
+    private void invokeHandler(RouteMatch match, HttpExchange exchange) throws IOException {
         Method method = match.route.method;
         Object instance = match.route.instance;
         method.setAccessible(true);
 
-        try {
+        try (HttpExchange ex = exchange) {
             Object[] args = new Object[method.getParameterCount()];
             for (int i = 0; i < method.getParameterCount(); i++) {
                 Class<?> paramType = method.getParameterTypes()[i];
                 if (paramType == HttpExchange.class) {
-                    args[i] = exchange;
+                    args[i] = ex;
                 } else if (paramType == Map.class) {
                     args[i] = match.pathParams;
                 } else {
-                    throw new UnsupportedOperationException("Неподдерживаемый тип параметра: " + paramType);
+                    sendStatusCodeResponse(ex, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
+                    return;
                 }
             }
 
-            method.invoke(instance, args);
-
-        } catch (Exception e) {
-            e.printStackTrace();
             try {
-                if (exchange.getResponseCode() == -1) {
-                    exchange.sendResponseHeaders(500, -1);
-                }
-            } catch (IOException ignored) {
+                method.invoke(instance, args);
+            } catch (Exception e) {
+                sendStatusCodeResponse(ex, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
+                return;
             }
-        } finally {
-            if (exchange.getResponseCode() == -1) {
-                try {
-                    exchange.sendResponseHeaders(200, -1);
-                } catch (IOException ignored) {
-                }
+
+            if (ex.getResponseCode() == -1) {
+                sendStatusCodeResponse(ex, StatusCode.HTTP_OK);
             }
-            exchange.close();
         }
     }
 

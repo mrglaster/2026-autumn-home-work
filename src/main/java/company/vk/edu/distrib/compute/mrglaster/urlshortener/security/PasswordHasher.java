@@ -8,15 +8,17 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 
-
-public class PasswordHasher {
-    // Тут бы Argon2id использовать, но пока работаем с тем, что есть
-    // https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+// Тут бы Argon2id использовать, но пока работаем с тем, что есть
+// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+public final class PasswordHasher {
     private static final int ITERATIONS = 6; // Рекомендовано 600_000, но тогда мы по таймауту в тестах вываливаемся
     private static final int KEY_LENGTH = 256;
     private static final int SALT_LENGTH = 16;
     private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
 
+    private PasswordHasher() {
+        throw new AssertionError("Utility class should not be instantiated");
+    }
 
     public static String hash(String password) {
         byte[] salt = new byte[SALT_LENGTH];
@@ -24,9 +26,11 @@ public class PasswordHasher {
 
         byte[] hash = pbkdf2(password, salt, ITERATIONS);
 
-        return ITERATIONS + ":" +
-                Base64.getEncoder().encodeToString(salt) + ":" +
-                Base64.getEncoder().encodeToString(hash);
+        return ITERATIONS
+                + ":"
+                + Base64.getEncoder().encodeToString(salt)
+                + ":"
+                + Base64.getEncoder().encodeToString(hash);
     }
 
     public static boolean verify(String password, String storedHashString) {

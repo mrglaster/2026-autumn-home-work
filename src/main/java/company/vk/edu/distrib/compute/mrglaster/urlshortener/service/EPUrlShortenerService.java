@@ -5,27 +5,25 @@ import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.ex
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.external.StatusController;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.internal.UserController;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
-import company.vk.edu.distrib.compute.mrglaster.urlshortener.network.ControllerManager;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.manager.ControllerManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
 public class EPUrlShortenerService implements company.vk.edu.distrib.compute.urlshortener.UrlShortenerService {
 
-    private final int SHUTDOWN_DELAY = 5;
-    private final String USERS_STORAGE_FILE = "/tmp/users";
-    private final String URL_STORAGE_FILE = "/tmp/urls";
+    private static final int SHUTDOWN_DELAY = 5;
+    private static final String USERS_STORAGE_FILE = "/tmp/users";
+    private static final String URL_STORAGE_FILE = "/tmp/urls";
 
     private final HttpServer httpServer;
-    private final int serverPort;
     private final PersistentDao userDao;
     private final PersistentDao urlDao;
 
     public EPUrlShortenerService(int port) throws IOException {
-        this.serverPort = port;
-        this.httpServer = HttpServer.create(new InetSocketAddress(this.serverPort), 0);
+        this.httpServer = HttpServer.create(new InetSocketAddress(port), 0);
 
-        String baseUrl = "http://127.0.0.1:" + port;
+        final String baseUrl = "http://127.0.0.1:" + port;
 
         this.urlDao = new PersistentDao(URL_STORAGE_FILE);
         this.userDao = new PersistentDao(USERS_STORAGE_FILE);

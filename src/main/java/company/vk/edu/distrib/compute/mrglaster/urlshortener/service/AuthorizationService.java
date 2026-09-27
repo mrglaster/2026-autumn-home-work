@@ -15,8 +15,6 @@ public class AuthorizationService {
     }
 
     public boolean checkBasicAuth(String authHeader) throws IOException {
-
-
         if (authHeader == null || !authHeader.startsWith("Basic ")) {
             return false;
         }
@@ -39,7 +37,7 @@ public class AuthorizationService {
         }
     }
 
-    private boolean verify(String login, String password){
+    private boolean verify(String login, String password) {
         try {
             String storedHash = userDao.get(login);
             return PasswordHasher.verify(password, storedHash);

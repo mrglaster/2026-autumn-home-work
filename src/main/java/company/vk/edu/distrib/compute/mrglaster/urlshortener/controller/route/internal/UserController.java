@@ -23,7 +23,7 @@ public class UserController implements NetworkInteractable {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8).trim();
 
         String[] parts = body.split(":", 2);
-        if (parts.length != 2 || parts[0].trim().isEmpty()) {
+        if (parts.length != 2 || parts[0].isBlank()) {
             this.sendStatusCodeResponse(exchange, StatusCode.HTTP_BAD_REQUEST);
             return;
         }

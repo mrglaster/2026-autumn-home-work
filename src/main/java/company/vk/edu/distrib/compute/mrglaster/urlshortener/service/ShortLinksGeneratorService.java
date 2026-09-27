@@ -18,11 +18,12 @@ public class ShortLinksGeneratorService {
         StringBuilder hexString = new StringBuilder();
         for (byte b : encodedHash) {
             String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hexString.append('0');
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
             hexString.append(hex);
         }
-        String shortHash = hexString.substring(0, 10);
-        return shortHash;
+        return hexString.substring(0, 10);
     }
 
     public String generateShortURL(String linkId) throws NoSuchAlgorithmException {
