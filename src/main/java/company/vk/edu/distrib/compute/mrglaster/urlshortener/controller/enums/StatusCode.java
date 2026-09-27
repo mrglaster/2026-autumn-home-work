@@ -1,4 +1,4 @@
-package company.vk.edu.distrib.compute.mrglaster.controller.model;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.enums;
 
 public enum StatusCode {
     HTTP_OK(200),
@@ -8,7 +8,8 @@ public enum StatusCode {
     HTTP_NOT_FOUND(404),
     HTTP_ACCEPTED(202),
     HTTP_UNAUTHORIZED(401),
-    HTTP_CREATED(201);
+    HTTP_CREATED(201),
+    HTTP_MOVED_PERMANENTLY(301);
 
     private final int statusCode;
 

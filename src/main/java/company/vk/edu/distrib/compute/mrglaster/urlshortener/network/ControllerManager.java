@@ -1,9 +1,9 @@
-package company.vk.edu.distrib.compute.mrglaster.network;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.network;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import company.vk.edu.distrib.compute.mrglaster.annotation.Route;
-import company.vk.edu.distrib.compute.mrglaster.service.AuthorizationService;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.annotation.Route;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.service.AuthorizationService;
 
 import java.io.IOException;
 import java.lang.reflect.Method;

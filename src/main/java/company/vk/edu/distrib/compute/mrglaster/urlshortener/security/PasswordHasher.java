@@ -1,4 +1,4 @@
-package company.vk.edu.distrib.compute.mrglaster.security;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.security;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;

@@ -1,4 +1,4 @@
-package company.vk.edu.distrib.compute.mrglaster.annotation;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

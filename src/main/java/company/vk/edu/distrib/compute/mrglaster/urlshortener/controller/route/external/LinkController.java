@@ -1,11 +1,11 @@
-package company.vk.edu.distrib.compute.mrglaster.controller.external;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.external;
 
 import com.sun.net.httpserver.HttpExchange;
-import company.vk.edu.distrib.compute.mrglaster.annotation.Route;
-import company.vk.edu.distrib.compute.mrglaster.controller.model.BaseController;
-import company.vk.edu.distrib.compute.mrglaster.controller.model.StatusCode;
-import company.vk.edu.distrib.compute.mrglaster.dao.UrlDao;
-import company.vk.edu.distrib.compute.mrglaster.service.ShortLinksGeneratorService;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.annotation.Route;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.enums.StatusCode;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.network.NetworkInteractable;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.service.ShortLinksGeneratorService;
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,12 +15,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public class LinkController extends BaseController {
+public class LinkController implements NetworkInteractable {
 
-    private final UrlDao urlDao;
+    private final PersistentDao urlDao;
     private final ShortLinksGeneratorService shortLinksGeneratorService;
 
-    public LinkController(UrlDao urlDao, String baseUrl) {
+    public LinkController(PersistentDao urlDao, String baseUrl) {
         this.urlDao = urlDao;
         this.shortLinksGeneratorService = new ShortLinksGeneratorService(baseUrl);
     }
@@ -30,15 +30,15 @@ public class LinkController extends BaseController {
         String id = pathParams.get("id");
         try {
             if (!isValidID(id)) {
-                exchange.sendResponseHeaders(422, -1);
+                sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
                 return;
             }
             String longUrl = urlDao.get(id);
-            this.sendStringResponse(exchange, longUrl, StatusCode.HTTP_OK);
+            sendStringResponse(exchange, longUrl, StatusCode.HTTP_OK);
         } catch (NoSuchElementException e) {
-            exchange.sendResponseHeaders(404, -1);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_NOT_FOUND);
         } catch (IllegalArgumentException | IOException e) {
-            exchange.sendResponseHeaders(500, -1);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -47,17 +47,15 @@ public class LinkController extends BaseController {
         String id = pathParams.get("id");
         try {
             if (!isValidID(id)) {
-                exchange.sendResponseHeaders(422, -1);
+                sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
                 return;
             }
             String longUrl = urlDao.get(id);
-            exchange.getResponseHeaders().set("Location", longUrl);
-            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
-            exchange.sendResponseHeaders(301, -1);
+            sendStringResponse(exchange, longUrl, StatusCode.HTTP_MOVED_PERMANENTLY);
         } catch (NoSuchElementException e) {
-            exchange.sendResponseHeaders(404, -1);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_NOT_FOUND);
         } catch (IllegalArgumentException | IOException e) {
-            exchange.sendResponseHeaders(500, -1);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -65,13 +63,13 @@ public class LinkController extends BaseController {
     public void createLink(HttpExchange exchange) throws IOException, NoSuchAlgorithmException {
         String longUrl = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8).trim();
         if (longUrl.isEmpty() || !isValidUrl(longUrl)) {
-            exchange.sendResponseHeaders(422, -1);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
             return;
         }
         String shortId = shortLinksGeneratorService.generateLinkID(longUrl);
         String shortUrl = shortLinksGeneratorService.generateShortURL(shortId);
         urlDao.upsert(shortId, longUrl);
-        this.sendStringResponse(exchange, shortUrl, StatusCode.HTTP_CREATED);
+        sendStringResponse(exchange, shortUrl, StatusCode.HTTP_CREATED);
     }
 
     @Route(method = "PUT", path = "/v0/links/{id}", requiresAuthorization = true)
@@ -80,16 +78,16 @@ public class LinkController extends BaseController {
         try {
             String newLongUrl = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8).trim();
             if (!isValidUrl(newLongUrl) || !isValidID(id)) {
-                exchange.sendResponseHeaders(422, -1);
+                sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
                 return;
             }
             urlDao.get(id);
             urlDao.upsert(id, newLongUrl);
             this.sendStringResponse(exchange, "OK", StatusCode.HTTP_OK);
         } catch (NoSuchElementException e) {
-            this.sendStatusCodeResponse(exchange, StatusCode.HTTP_NOT_FOUND);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_NOT_FOUND);
         } catch (IllegalArgumentException | IOException e) {
-            this.sendStatusCodeResponse(exchange, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -97,11 +95,11 @@ public class LinkController extends BaseController {
     public void deleteLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         if (!isValidID(id)) {
-            this.sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_UNPROCESSABLE_ENTITY);
             return;
         }
         urlDao.delete(id);
-        this.sendStatusCodeResponse(exchange, StatusCode.HTTP_ACCEPTED);
+        sendStatusCodeResponse(exchange, StatusCode.HTTP_ACCEPTED);
     }
 
     private boolean isValidUrl(String urlString) {

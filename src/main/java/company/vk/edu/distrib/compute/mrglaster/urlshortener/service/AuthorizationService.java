@@ -1,17 +1,16 @@
-package company.vk.edu.distrib.compute.mrglaster.service;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.service;
 
-import company.vk.edu.distrib.compute.mrglaster.dao.UserDao;
-import com.sun.net.httpserver.HttpExchange;
-import company.vk.edu.distrib.compute.mrglaster.security.PasswordHasher;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.security.PasswordHasher;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class AuthorizationService {
-    private final UserDao userDao;
+    private final PersistentDao userDao;
 
-    public AuthorizationService(UserDao userDao) {
+    public AuthorizationService(PersistentDao userDao) {
         this.userDao = userDao;
     }
 

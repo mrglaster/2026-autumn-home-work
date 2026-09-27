@@ -1,4 +1,4 @@
-package company.vk.edu.distrib.compute.mrglaster.service;
+package company.vk.edu.distrib.compute.mrglaster.urlshortener.service;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
