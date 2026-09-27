@@ -85,32 +85,40 @@ public class ControllerManager implements NetworkInteractable {
 
     private RouteMatch findMatchingRoute(String method, String path) {
         String[] pathSegments = splitPath(path);
-        Map<String, String> extractedParams = new ConcurrentHashMap<>();
         for (RouteDefinition route : routes) {
             if (!route.httpMethod.equals(method) || route.pathSegments.length != pathSegments.length) {
                 continue;
             }
-            extractedParams.clear();
-            boolean isMatch = true;
-
-            for (int i = 0; i < route.pathSegments.length; i++) {
-                String routeSegment = route.pathSegments[i];
-                String pathSegment = pathSegments[i];
-
-                if (routeSegment.startsWith("{") && routeSegment.endsWith("}")) {
-                    String paramName = routeSegment.substring(1, routeSegment.length() - 1);
-                    extractedParams.put(paramName, pathSegment);
-                } else if (!routeSegment.equals(pathSegment)) {
-                    isMatch = false;
-                    break;
-                }
-            }
-
-            if (isMatch) {
+            Map<String, String> extractedParams = matchRoute(route, pathSegments);
+            if (extractedParams != null) {
                 return new RouteMatch(route, extractedParams);
             }
         }
         return null;
+    }
+
+    @SuppressWarnings("java:S1197")
+    private Map<String, String> matchRoute(RouteDefinition route, String... pathSegments) {
+        Map<String, String> extractedParams = new ConcurrentHashMap<>();
+        for (int i = 0; i < route.pathSegments.length; i++) {
+            String routeSegment = route.pathSegments[i];
+            String pathSegment = pathSegments[i];
+
+            if (isPathParam(routeSegment)) {
+                extractedParams.put(extractParamName(routeSegment), pathSegment);
+            } else if (!routeSegment.equals(pathSegment)) {
+                return null;
+            }
+        }
+        return extractedParams;
+    }
+
+    private static boolean isPathParam(String segment) {
+        return segment.startsWith("{") && segment.endsWith("}");
+    }
+
+    private static String extractParamName(String segment) {
+        return segment.substring(1, segment.length() - 1);
     }
 
     private void invokeHandler(RouteMatch match, HttpExchange exchange) throws IOException {

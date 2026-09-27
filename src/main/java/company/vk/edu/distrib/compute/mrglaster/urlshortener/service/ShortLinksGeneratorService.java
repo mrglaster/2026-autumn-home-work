@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class ShortLinksGeneratorService {
     private final URI baseUrl;
+    private static final int MIN_HEX_LENGTH = 1;
 
     public ShortLinksGeneratorService(String baseUrl) {
         this.baseUrl = URI.create(baseUrl);
@@ -18,7 +19,7 @@ public class ShortLinksGeneratorService {
         StringBuilder hexString = new StringBuilder();
         for (byte b : encodedHash) {
             String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) {
+            if (hex.length() == MIN_HEX_LENGTH) {
                 hexString.append('0');
             }
             hexString.append(hex);
