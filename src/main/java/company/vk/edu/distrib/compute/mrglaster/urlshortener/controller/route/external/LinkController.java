@@ -41,7 +41,7 @@ public class LinkController implements NetworkInteractable {
         }
     }
 
-    @Route(method = "GET", path = "/{id}", requiresAuthorization = true)
+    @Route(method = "GET", path = "/{id}", requiresAuthorization = false)
     public void redirectLink(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         try {
@@ -50,7 +50,9 @@ public class LinkController implements NetworkInteractable {
                 return;
             }
             String longUrl = urlDao.get(id);
-            sendStringResponse(exchange, longUrl, StatusCode.HTTP_MOVED_PERMANENTLY);
+            exchange.getResponseHeaders().set("Location", longUrl);
+            exchange.sendResponseHeaders(StatusCode.HTTP_MOVED_PERMANENTLY.getStatusCode(), -1);
+            exchange.close();
         } catch (NoSuchElementException e) {
             sendStatusCodeResponse(exchange, StatusCode.HTTP_NOT_FOUND);
         } catch (IllegalArgumentException | IOException e) {
