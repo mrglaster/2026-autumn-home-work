@@ -13,17 +13,17 @@ import java.net.InetSocketAddress;
 public class EPUrlShortenerService implements company.vk.edu.distrib.compute.urlshortener.UrlShortenerService {
 
     private final int SHUTDOWN_DELAY = 5;
-    private final int SERVER_PORT;
     private final String USERS_STORAGE_FILE = "/tmp/users";
     private final String URL_STORAGE_FILE = "/tmp/urls";
-    private final HttpServer httpServer;
 
+    private final HttpServer httpServer;
+    private final int serverPort;
     private final PersistentDao userDao;
     private final PersistentDao urlDao;
 
     public EPUrlShortenerService(int port) throws IOException {
-        this.SERVER_PORT = port;
-        this.httpServer = HttpServer.create(new InetSocketAddress(this.SERVER_PORT), 0);
+        this.serverPort = port;
+        this.httpServer = HttpServer.create(new InetSocketAddress(this.serverPort), 0);
 
         String baseUrl = "http://127.0.0.1:" + port;
 
