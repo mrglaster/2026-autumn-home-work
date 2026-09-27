@@ -103,7 +103,7 @@ public class LinkController implements NetworkInteractable {
         sendStatusCodeResponse(exchange, StatusCode.HTTP_ACCEPTED);
     }
 
-    private boolean isInvalidUrl(String urlString) {
+    public boolean isInvalidUrl(String urlString) {
         try {
             assert !URI.create(urlString).toURL().toString().isEmpty();
             return false;
@@ -112,7 +112,7 @@ public class LinkController implements NetworkInteractable {
         }
     }
 
-    private boolean isInvalidId(String id) {
+    public boolean isInvalidId(String id) {
         return id == null || !id.matches("[0-9a-zA-Z]{10}");
     }
 }

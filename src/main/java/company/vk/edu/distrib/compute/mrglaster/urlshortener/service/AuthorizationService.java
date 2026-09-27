@@ -9,6 +9,8 @@ import java.util.Base64;
 
 public class AuthorizationService {
     private final PersistentDao userDao;
+    private static final String SEPARATOR = ":";
+    private static final int HEADER_PARTS_COUNT = 2;
 
     public AuthorizationService(PersistentDao userDao) {
         this.userDao = userDao;
@@ -23,8 +25,8 @@ public class AuthorizationService {
             String base64Credentials = authHeader.substring(6);
             String credentials = new String(Base64.getDecoder().decode(base64Credentials), StandardCharsets.UTF_8);
 
-            String[] parts = credentials.split(":", 2);
-            if (parts.length != 2) {
+            String[] parts = credentials.split(SEPARATOR, 2);
+            if (parts.length != HEADER_PARTS_COUNT) {
                 return false;
             }
 

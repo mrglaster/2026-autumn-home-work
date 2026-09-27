@@ -6,6 +6,7 @@ import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.ex
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.internal.UserController;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.manager.ControllerManager;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.exception.DataSavingException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -48,7 +49,7 @@ public class EPUrlShortenerService implements company.vk.edu.distrib.compute.url
             userDao.save();
             urlDao.save();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new DataSavingException("Unable to save data to files", e);
         } finally {
             httpServer.stop(SHUTDOWN_DELAY);
         }

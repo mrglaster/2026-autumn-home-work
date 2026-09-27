@@ -1,5 +1,7 @@
 package company.vk.edu.distrib.compute.mrglaster.urlshortener.security;
 
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.exception.PasswordHashingException;
+
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.security.MessageDigest;
@@ -15,6 +17,8 @@ public final class PasswordHasher {
     private static final int KEY_LENGTH = 256;
     private static final int SALT_LENGTH = 16;
     private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
+    private static final String SEPARATOR = ":";
+    private static final int HASH_PARTS_COUNT = 3;
 
     private PasswordHasher() {
         throw new AssertionError("Utility class should not be instantiated");
@@ -27,9 +31,9 @@ public final class PasswordHasher {
         byte[] hash = pbkdf2(password, salt, ITERATIONS);
 
         return ITERATIONS
-                + ":"
+                + SEPARATOR
                 + Base64.getEncoder().encodeToString(salt)
-                + ":"
+                + SEPARATOR
                 + Base64.getEncoder().encodeToString(hash);
     }
 
@@ -38,8 +42,8 @@ public final class PasswordHasher {
             return false;
         }
 
-        String[] parts = storedHashString.split(":");
-        if (parts.length != 3) {
+        String[] parts = storedHashString.split(SEPARATOR);
+        if (parts.length != HASH_PARTS_COUNT) {
             return false;
         }
 
@@ -63,7 +67,7 @@ public final class PasswordHasher {
             SecretKeyFactory skf = SecretKeyFactory.getInstance(ALGORITHM);
             return skf.generateSecret(spec).getEncoded();
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException("Password hashing error", e);
+            throw new PasswordHashingException("Password hashing error", e);
         }
     }
 }

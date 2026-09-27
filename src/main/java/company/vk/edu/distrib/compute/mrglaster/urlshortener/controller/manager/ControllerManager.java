@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,6 +19,7 @@ public class ControllerManager implements NetworkInteractable {
 
     private final List<RouteDefinition> routes = new ArrayList<>();
     private final AuthorizationService authService;
+    private static final String ROOT_PATH = "/";
 
     public ControllerManager(AuthorizationService authService) {
         this.authService = authService;
@@ -25,19 +27,19 @@ public class ControllerManager implements NetworkInteractable {
 
     private static String[] splitPath(String urlPath) {
         String processableUrlPath = urlPath;
-        if (processableUrlPath == null || processableUrlPath.isEmpty() || "/".equals(processableUrlPath)) {
+        if (processableUrlPath == null || processableUrlPath.isEmpty() || ROOT_PATH.equals(processableUrlPath)) {
             return new String[0];
         }
-        if (processableUrlPath.startsWith("/")) {
+        if (processableUrlPath.startsWith(ROOT_PATH)) {
             processableUrlPath = processableUrlPath.substring(1);
         }
-        if (processableUrlPath.endsWith("/")) {
+        if (processableUrlPath.endsWith(ROOT_PATH)) {
             processableUrlPath = processableUrlPath.substring(0, processableUrlPath.length() - 1);
         }
         if (processableUrlPath.isEmpty()) {
             return new String[0];
         }
-        return processableUrlPath.split("/");
+        return processableUrlPath.split(ROOT_PATH);
     }
 
     public void addController(Object controller) {
@@ -45,7 +47,7 @@ public class ControllerManager implements NetworkInteractable {
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Route.class)) {
                 Route route = method.getAnnotation(Route.class);
-                routes.add(new RouteDefinition(route.method().toUpperCase(),
+                routes.add(new RouteDefinition(route.method().toUpperCase(Locale.US),
                         route.path(),
                         route.requiresAuthorization(),
                         method, controller));
@@ -54,9 +56,9 @@ public class ControllerManager implements NetworkInteractable {
     }
 
     public void register(HttpServer server) {
-        server.createContext("/", exchange -> {
+        server.createContext(ROOT_PATH, exchange -> {
             String requestPath = exchange.getRequestURI().getPath();
-            String requestMethod = exchange.getRequestMethod().toUpperCase();
+            String requestMethod = exchange.getRequestMethod().toUpperCase(Locale.US);
 
             RouteMatch match = findMatchingRoute(requestMethod, requestPath);
 
@@ -83,12 +85,12 @@ public class ControllerManager implements NetworkInteractable {
 
     private RouteMatch findMatchingRoute(String method, String path) {
         String[] pathSegments = splitPath(path);
-
+        Map<String, String> extractedParams = new ConcurrentHashMap<>();
         for (RouteDefinition route : routes) {
             if (!route.httpMethod.equals(method) || route.pathSegments.length != pathSegments.length) {
                 continue;
             }
-            Map<String, String> extractedParams = new ConcurrentHashMap<>();
+            extractedParams.clear();
             boolean isMatch = true;
 
             for (int i = 0; i < route.pathSegments.length; i++) {
@@ -114,7 +116,6 @@ public class ControllerManager implements NetworkInteractable {
     private void invokeHandler(RouteMatch match, HttpExchange exchange) throws IOException {
         Method method = match.route.method;
         Object instance = match.route.instance;
-        method.setAccessible(true);
 
         try (HttpExchange ex = exchange) {
             Object[] args = new Object[method.getParameterCount()];
