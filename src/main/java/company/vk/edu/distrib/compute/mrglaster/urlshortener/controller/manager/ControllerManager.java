@@ -9,10 +9,7 @@ import company.vk.edu.distrib.compute.mrglaster.urlshortener.service.Authorizati
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ControllerManager implements NetworkInteractable {
@@ -89,16 +86,15 @@ public class ControllerManager implements NetworkInteractable {
             if (!route.httpMethod.equals(method) || route.pathSegments.length != pathSegments.length) {
                 continue;
             }
-            Map<String, String> extractedParams = matchRoute(route, pathSegments);
-            if (extractedParams != null) {
-                return new RouteMatch(route, extractedParams);
+            Optional<Map<String, String>> extractedParams = matchRoute(route, pathSegments);
+            if (extractedParams.isPresent()) {
+                return new RouteMatch(route, extractedParams.get());
             }
         }
         return null;
     }
 
-    @SuppressWarnings("java:S1197")
-    private Map<String, String> matchRoute(RouteDefinition route, String... pathSegments) {
+    private Optional<Map<String, String>> matchRoute(RouteDefinition route, String... pathSegments) {
         Map<String, String> extractedParams = new ConcurrentHashMap<>();
         for (int i = 0; i < route.pathSegments.length; i++) {
             String routeSegment = route.pathSegments[i];
@@ -107,10 +103,10 @@ public class ControllerManager implements NetworkInteractable {
             if (isPathParam(routeSegment)) {
                 extractedParams.put(extractParamName(routeSegment), pathSegment);
             } else if (!routeSegment.equals(pathSegment)) {
-                return null;
+                return Optional.empty();
             }
         }
-        return extractedParams;
+        return Optional.of(extractedParams);
     }
 
     private static boolean isPathParam(String segment) {
