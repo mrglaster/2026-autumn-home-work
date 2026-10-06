@@ -7,6 +7,7 @@ import company.vk.edu.distrib.compute.mrglaster.kv.controller.EntityController;
 import company.vk.edu.distrib.compute.mrglaster.kv.controller.KVStatusController;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.manager.ControllerManager;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
+import company.vk.edu.distrib.compute.mrglaster.urlshortener.exception.DataSavingException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -38,7 +39,7 @@ public class EKVServiceImpl implements KVService {
         try {
             entityDao.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new DataSavingException("Unable to save the data", e);
         } finally {
             httpServer.stop(SHUTDOWN_DELAY);
         }

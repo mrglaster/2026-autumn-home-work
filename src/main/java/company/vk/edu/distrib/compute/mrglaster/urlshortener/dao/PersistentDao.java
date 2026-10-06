@@ -155,6 +155,7 @@ public class PersistentDao<T> implements Dao<T> {
         lock.lock();
         try {
             log.seek(log.length());
+            byte[] data;
             for (String key : modifiedKeys) {
                 T value = storage.get(key);
                 if (value == null) {
@@ -162,7 +163,7 @@ public class PersistentDao<T> implements Dao<T> {
                 }
                 log.writeUTF("PUT");
                 log.writeUTF(key);
-                byte[] data = serializer.serialize(value);
+                data = serializer.serialize(value);
                 log.writeInt(data.length);
                 log.write(data);
             }

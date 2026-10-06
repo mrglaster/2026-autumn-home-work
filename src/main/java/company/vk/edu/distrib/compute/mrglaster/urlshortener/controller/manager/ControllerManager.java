@@ -117,13 +117,14 @@ public class ControllerManager implements NetworkInteractable {
 
     private RouteMatch findMatchingRoute(String method, String path, Map<String, String> queryParams) {
         String[] pathSegments = splitPath(path);
+        Map<String, String> allParams;
         for (RouteDefinition route : routes) {
             if (!route.httpMethod.equals(method) || route.pathSegments.length != pathSegments.length) {
                 continue;
             }
             Optional<Map<String, String>> extractedParams = matchRoute(route, pathSegments);
             if (extractedParams.isPresent()) {
-                Map<String, String> allParams = new ConcurrentHashMap<>(extractedParams.get());
+                allParams = new ConcurrentHashMap<>(extractedParams.get());
                 allParams.putAll(queryParams);
                 return new RouteMatch(route, allParams);
             }
