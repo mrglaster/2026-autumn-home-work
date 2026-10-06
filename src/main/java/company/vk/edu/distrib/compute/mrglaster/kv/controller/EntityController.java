@@ -18,7 +18,7 @@ public class EntityController implements NetworkInteractable {
         this.dao = dao;
     }
 
-    @Route(method = "GET", path = "/v0/entity/{id}", requiresAuthorization = false)
+    @Route(method = "GET", path = "/v0/entity", requiresAuthorization = false)
     public void getEntity(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
 
         String id = pathParams.get("id");
@@ -36,7 +36,7 @@ public class EntityController implements NetworkInteractable {
         }
     }
 
-    @Route(method = "PUT", path = "/v0/entity/{id}", requiresAuthorization = false)
+    @Route(method = "PUT", path = "/v0/entity", requiresAuthorization = false)
     public void upsertEntity(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         if (isInvalidId(id)) {
@@ -52,7 +52,7 @@ public class EntityController implements NetworkInteractable {
         }
     }
 
-    @Route(method = "DELETE", path = "/v0/entity/{id}", requiresAuthorization = false)
+    @Route(method = "DELETE", path = "/v0/entity", requiresAuthorization = false)
     public void deleteEntity(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
         String id = pathParams.get("id");
         if (isInvalidId(id)) {
@@ -71,18 +71,4 @@ public class EntityController implements NetworkInteractable {
         return id == null || id.isEmpty();
     }
 
-    @Route(method = "GET", path = "/v0/entity", requiresAuthorization = false)
-    public void getEmpty(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
-        sendStatusCodeResponse(exchange, StatusCode.HTTP_BAD_REQUEST);
-    }
-
-    @Route(method = "PUT", path = "/v0/entity", requiresAuthorization = false)
-    public void putEmpty(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
-        sendStatusCodeResponse(exchange, StatusCode.HTTP_BAD_REQUEST);
-    }
-
-    @Route(method = "DELETE", path = "/v0/entity", requiresAuthorization = false)
-    public void deleteEmpty(HttpExchange exchange, Map<String, String> pathParams) throws IOException {
-        sendStatusCodeResponse(exchange, StatusCode.HTTP_BAD_REQUEST);
-    }
 }

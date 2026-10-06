@@ -15,9 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class PersistentDao<T> implements Dao<T> {
 
-    /**
-     * Strategy for converting values to/from bytes for persistence.
-     */
+
     public interface Serializer<T> {
         byte[] serialize(T value);
 
