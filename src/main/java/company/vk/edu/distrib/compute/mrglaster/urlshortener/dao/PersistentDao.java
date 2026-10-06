@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -90,7 +91,7 @@ public class PersistentDao<T> implements Dao<T> {
 
     private void loadFromFile() throws IOException {
         log.seek(0);
-        byte[] data;
+        byte[] buffer = new byte[0];
         while (log.getFilePointer() < log.length()) {
             try {
                 String operation = log.readUTF();
@@ -98,9 +99,12 @@ public class PersistentDao<T> implements Dao<T> {
 
                 if ("PUT".equals(operation)) {
                     int length = log.readInt();
-                    data = new byte[length];
-                    log.readFully(data);
-                    storage.put(key, serializer.deserialize(data));
+                    if (buffer.length < length) {
+                        buffer = new byte[length];
+                    }
+                    log.readFully(buffer, 0, length);
+                    byte[] exact = Arrays.copyOf(buffer, length);
+                    storage.put(key, serializer.deserialize(exact));
                 } else if ("DELETE".equals(operation)) {
                     storage.remove(key);
                 }
