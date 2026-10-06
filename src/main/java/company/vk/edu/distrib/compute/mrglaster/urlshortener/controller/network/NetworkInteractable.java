@@ -19,4 +19,10 @@ public interface NetworkInteractable {
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
         exchange.sendResponseHeaders(statusCode.getStatusCode(), -1);
     }
+
+    default void sendBytesResponse(HttpExchange exchange, byte[] body, StatusCode statusCode) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", "application/octet-stream");
+        exchange.sendResponseHeaders(statusCode.getStatusCode(), body.length);
+        exchange.getResponseBody().write(body);
+    }
 }

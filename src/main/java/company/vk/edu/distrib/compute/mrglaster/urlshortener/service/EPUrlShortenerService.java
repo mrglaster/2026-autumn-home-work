@@ -18,16 +18,16 @@ public class EPUrlShortenerService implements company.vk.edu.distrib.compute.url
     private static final String URL_STORAGE_FILE = "/tmp/urls";
 
     private final HttpServer httpServer;
-    private final PersistentDao userDao;
-    private final PersistentDao urlDao;
+    private final PersistentDao<String> userDao;
+    private final PersistentDao<String> urlDao;
 
     public EPUrlShortenerService(int port) throws IOException {
         this.httpServer = HttpServer.create(new InetSocketAddress(port), 0);
 
         final String baseUrl = "http://127.0.0.1:" + port;
 
-        this.urlDao = new PersistentDao(URL_STORAGE_FILE);
-        this.userDao = new PersistentDao(USERS_STORAGE_FILE);
+        this.urlDao  = new PersistentDao<>(URL_STORAGE_FILE,   PersistentDao.stringSerializer());
+        this.userDao = new PersistentDao<>(USERS_STORAGE_FILE, PersistentDao.stringSerializer());
 
         AuthorizationService authService = new AuthorizationService(userDao);
 

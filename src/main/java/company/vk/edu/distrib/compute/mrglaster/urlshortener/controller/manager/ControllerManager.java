@@ -60,7 +60,7 @@ public class ControllerManager implements NetworkInteractable {
             RouteMatch match = findMatchingRoute(requestMethod, requestPath);
 
             if (match != null) {
-                if (match.route.requiresAuthorization) {
+                if (match.route.requiresAuthorization && authService != null) {
                     try {
                         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
                         if (!authService.checkBasicAuth(authHeader)) {

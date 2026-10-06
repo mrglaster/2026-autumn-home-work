@@ -8,11 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class AuthorizationService {
-    private final PersistentDao userDao;
+    private final PersistentDao<String> userDao;
     private static final String SEPARATOR = ":";
     private static final int HEADER_PARTS_COUNT = 2;
 
-    public AuthorizationService(PersistentDao userDao) {
+    public AuthorizationService(PersistentDao<String> userDao) {
         this.userDao = userDao;
     }
 

@@ -16,10 +16,10 @@ import java.util.NoSuchElementException;
 
 public class LinkController implements NetworkInteractable {
 
-    private final PersistentDao urlDao;
+    private final PersistentDao<String> urlDao;
     private final ShortLinksGeneratorService shortLinksGeneratorService;
 
-    public LinkController(PersistentDao urlDao, String baseUrl) {
+    public LinkController(PersistentDao<String> urlDao, String baseUrl) {
         this.urlDao = urlDao;
         this.shortLinksGeneratorService = new ShortLinksGeneratorService(baseUrl);
     }

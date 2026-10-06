@@ -5,25 +5,89 @@ import company.vk.edu.distrib.compute.Dao;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class PersistentDao implements Dao<String> {
+public class PersistentDao<T> implements Dao<T> {
 
-    private final Map<String, String> storage = new ConcurrentHashMap<>();
+    /**
+     * Strategy for converting values to/from bytes for persistence.
+     */
+    public interface Serializer<T> {
+        byte[] serialize(T value);
+
+        T deserialize(byte[] data);
+    }
+
+
+    public static Serializer<String> stringSerializer() {
+        return new Serializer<>() {
+            @Override
+            public byte[] serialize(String value) {
+                return value.getBytes(StandardCharsets.UTF_8);
+            }
+
+            @Override
+            public String deserialize(byte[] data) {
+                return new String(data, StandardCharsets.UTF_8);
+            }
+        };
+    }
+
+    public static Serializer<byte[]> byteArraySerializer() {
+        return new Serializer<>() {
+            @Override
+            public byte[] serialize(byte[] value) {
+                return value;
+            }
+
+            @Override
+            public byte[] deserialize(byte[] data) {
+                return data;
+            }
+        };
+    }
+
+    public static Serializer<ByteBuffer> byteBufferSerializer() {
+        return new Serializer<>() {
+            @Override
+            public byte[] serialize(ByteBuffer value) {
+                ByteBuffer dup = value.duplicate();
+                byte[] out = new byte[dup.remaining()];
+                dup.get(out);
+                return out;
+            }
+
+            @Override
+            public ByteBuffer deserialize(byte[] data) {
+                return ByteBuffer.wrap(data);
+            }
+        };
+    }
+    private final Map<String, T> storage = new ConcurrentHashMap<>();
 
     private final Set<String> modifiedKeys = ConcurrentHashMap.newKeySet();
     private final Set<String> removedKeys = ConcurrentHashMap.newKeySet();
 
     private final ReentrantLock lock = new ReentrantLock();
     private final RandomAccessFile log;
+    private final Serializer<T> serializer;
 
-    public PersistentDao(String filePath) throws IOException {
+
+    public PersistentDao(String filePath, Serializer<T> serializer) throws IOException {
+        this.serializer = serializer;
         this.log = new RandomAccessFile(filePath, "rw");
         loadFromFile();
+    }
+
+
+    public static PersistentDao<String> forStrings(String filePath) throws IOException {
+        return new PersistentDao<>(filePath, stringSerializer());
     }
 
     private void loadFromFile() throws IOException {
@@ -34,8 +98,10 @@ public class PersistentDao implements Dao<String> {
                 String key = log.readUTF();
 
                 if ("PUT".equals(operation)) {
-                    String value = log.readUTF();
-                    storage.put(key, value);
+                    int length = log.readInt();
+                    byte[] data = new byte[length];
+                    log.readFully(data);
+                    storage.put(key, serializer.deserialize(data));
                 } else if ("DELETE".equals(operation)) {
                     storage.remove(key);
                 }
@@ -45,12 +111,13 @@ public class PersistentDao implements Dao<String> {
         }
     }
 
+
     @Override
-    public String get(String key) throws NoSuchElementException, IllegalArgumentException, IOException {
+    public T get(String key) throws NoSuchElementException, IllegalArgumentException, IOException {
         if (key == null) {
             throw new IllegalArgumentException("Key cannot be null");
         }
-        String value = storage.get(key);
+        T value = storage.get(key);
         if (value == null) {
             throw new NoSuchElementException("Key not found: " + key);
         }
@@ -58,7 +125,7 @@ public class PersistentDao implements Dao<String> {
     }
 
     @Override
-    public void upsert(String key, String value) throws IllegalArgumentException, IOException {
+    public void upsert(String key, T value) throws IllegalArgumentException, IOException {
         if (key == null || value == null) {
             throw new IllegalArgumentException("Key and value cannot be null");
         }
@@ -92,9 +159,15 @@ public class PersistentDao implements Dao<String> {
         try {
             log.seek(log.length());
             for (String key : modifiedKeys) {
+                T value = storage.get(key);
+                if (value == null) {
+                    continue;
+                }
                 log.writeUTF("PUT");
                 log.writeUTF(key);
-                log.writeUTF(storage.get(key));
+                byte[] data = serializer.serialize(value);
+                log.writeInt(data.length);
+                log.write(data);
             }
             for (String key : removedKeys) {
                 log.writeUTF("DELETE");
@@ -102,7 +175,6 @@ public class PersistentDao implements Dao<String> {
             }
             modifiedKeys.clear();
             removedKeys.clear();
-
         } finally {
             lock.unlock();
         }
