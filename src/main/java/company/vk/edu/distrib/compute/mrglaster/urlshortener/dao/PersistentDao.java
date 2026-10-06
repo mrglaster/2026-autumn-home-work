@@ -14,14 +14,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class PersistentDao<T> implements Dao<T> {
+    private final Map<String, T> storage;
 
+    private final Set<String> modifiedKeys;
+    private final Set<String> removedKeys;
+
+    private final ReentrantLock lock;
+    private final RandomAccessFile log;
+    private final Serializer<T> serializer;
 
     public interface Serializer<T> {
         byte[] serialize(T value);
 
         T deserialize(byte[] data);
     }
-
 
     public static Serializer<String> stringSerializer() {
         return new Serializer<>() {
@@ -67,22 +73,16 @@ public class PersistentDao<T> implements Dao<T> {
             }
         };
     }
-    private final Map<String, T> storage = new ConcurrentHashMap<>();
-
-    private final Set<String> modifiedKeys = ConcurrentHashMap.newKeySet();
-    private final Set<String> removedKeys = ConcurrentHashMap.newKeySet();
-
-    private final ReentrantLock lock = new ReentrantLock();
-    private final RandomAccessFile log;
-    private final Serializer<T> serializer;
-
 
     public PersistentDao(String filePath, Serializer<T> serializer) throws IOException {
         this.serializer = serializer;
         this.log = new RandomAccessFile(filePath, "rw");
+        this.storage = new ConcurrentHashMap<>();
+        this.modifiedKeys = ConcurrentHashMap.newKeySet();
+        this.removedKeys = ConcurrentHashMap.newKeySet();
+        this.lock = new ReentrantLock();
         loadFromFile();
     }
-
 
     public static PersistentDao<String> forStrings(String filePath) throws IOException {
         return new PersistentDao<>(filePath, stringSerializer());
@@ -108,7 +108,6 @@ public class PersistentDao<T> implements Dao<T> {
             }
         }
     }
-
 
     @Override
     public T get(String key) throws NoSuchElementException, IllegalArgumentException, IOException {

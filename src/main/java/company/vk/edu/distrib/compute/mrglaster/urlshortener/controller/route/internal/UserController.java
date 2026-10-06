@@ -1,10 +1,10 @@
 package company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.route.internal;
 
 import com.sun.net.httpserver.HttpExchange;
+import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.annotation.Route;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.enums.StatusCode;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.network.NetworkInteractable;
-import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.security.PasswordHasher;
 
 import java.io.IOException;
@@ -12,9 +12,9 @@ import java.nio.charset.StandardCharsets;
 
 public class UserController implements NetworkInteractable {
 
-    private final PersistentDao userDao;
+    private final Dao<String> userDao;
 
-    public UserController(PersistentDao userDao) {
+    public UserController(Dao<String> userDao) {
         this.userDao = userDao;
     }
 

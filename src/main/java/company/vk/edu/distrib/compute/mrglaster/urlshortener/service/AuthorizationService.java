@@ -1,6 +1,6 @@
 package company.vk.edu.distrib.compute.mrglaster.urlshortener.service;
 
-import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
+import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.security.PasswordHasher;
 
 import java.io.IOException;
@@ -8,11 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class AuthorizationService {
-    private final PersistentDao<String> userDao;
+    private final Dao<String> userDao;
     private static final String SEPARATOR = ":";
     private static final int HEADER_PARTS_COUNT = 2;
 
-    public AuthorizationService(PersistentDao<String> userDao) {
+    public AuthorizationService(Dao<String> userDao) {
         this.userDao = userDao;
     }
 

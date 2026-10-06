@@ -1,10 +1,10 @@
 package company.vk.edu.distrib.compute.mrglaster.kv.controller;
 
 import com.sun.net.httpserver.HttpExchange;
+import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.annotation.Route;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.enums.StatusCode;
 import company.vk.edu.distrib.compute.mrglaster.urlshortener.controller.network.NetworkInteractable;
-import company.vk.edu.distrib.compute.mrglaster.urlshortener.dao.PersistentDao;
 
 import java.io.IOException;
 import java.util.Map;
@@ -12,9 +12,9 @@ import java.util.NoSuchElementException;
 
 public class EntityController implements NetworkInteractable {
 
-    private final PersistentDao<byte[]> dao;
+    private final Dao<byte[]> dao;
 
-    public EntityController(PersistentDao<byte[]> dao) {
+    public EntityController(Dao<byte[]> dao) {
         this.dao = dao;
     }
 

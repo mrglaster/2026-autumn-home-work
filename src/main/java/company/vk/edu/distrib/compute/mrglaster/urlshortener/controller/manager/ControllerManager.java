@@ -80,32 +80,39 @@ public class ControllerManager implements NetworkInteractable {
     }
 
     public void register(HttpServer server) {
-        server.createContext(ROOT_PATH, exchange -> {
-            String requestPath = exchange.getRequestURI().getPath();
-            String requestMethod = exchange.getRequestMethod().toUpperCase(Locale.US);
-            Map<String, String> queryParams = parseQuery(exchange.getRequestURI().getRawQuery());
+        server.createContext(ROOT_PATH, this::handleExchange);
+    }
 
-            RouteMatch match = findMatchingRoute(requestMethod, requestPath, queryParams);
+    private void handleExchange(HttpExchange exchange) throws IOException {
+        String requestPath = exchange.getRequestURI().getPath();
+        String requestMethod = exchange.getRequestMethod().toUpperCase(Locale.US);
+        Map<String, String> queryParams = parseQuery(exchange.getRequestURI().getRawQuery());
 
-            if (match != null) {
-                if (match.route.requiresAuthorization && authService != null) {
-                    try {
-                        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
-                        if (!authService.checkBasicAuth(authHeader)) {
-                            sendStatusCodeResponse(exchange, StatusCode.HTTP_UNAUTHORIZED);
-                            return;
-                        }
-                    } catch (Exception e) {
-                        sendStatusCodeResponse(exchange, StatusCode.HTTP_UNAUTHORIZED);
-                        return;
-                    }
-                }
-                invokeHandler(match, exchange);
-            } else {
-                exchange.sendResponseHeaders(404, -1);
-                exchange.close();
-            }
-        });
+        RouteMatch match = findMatchingRoute(requestMethod, requestPath, queryParams);
+        if (match == null) {
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+            return;
+        }
+
+        if (!isAuthorized(match.route, exchange)) {
+            sendStatusCodeResponse(exchange, StatusCode.HTTP_UNAUTHORIZED);
+            return;
+        }
+
+        invokeHandler(match, exchange);
+    }
+
+    private boolean isAuthorized(RouteDefinition route, HttpExchange exchange) {
+        if (!route.requiresAuthorization() || authService == null) {
+            return true;
+        }
+        try {
+            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+            return authService.checkBasicAuth(authHeader);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private RouteMatch findMatchingRoute(String method, String path, Map<String, String> queryParams) {
@@ -178,21 +185,16 @@ public class ControllerManager implements NetworkInteractable {
         }
     }
 
-    private static class RouteDefinition {
-        final String httpMethod;
-        final String[] pathSegments;
-        final boolean requiresAuthorization;
-        final Method method;
-        final Object instance;
-
-        RouteDefinition(String httpMethod, String path, boolean requiresAuthorization, Method method, Object instance) {
-            this.httpMethod = httpMethod;
-            this.requiresAuthorization = requiresAuthorization;
-            this.method = method;
-            this.instance = instance;
-            this.pathSegments = splitPath(path);
+    private record RouteDefinition(String httpMethod, String[] pathSegments, boolean requiresAuthorization,
+                                   Method method, Object instance) {
+            RouteDefinition(String httpMethod,
+                            String path,
+                            boolean requiresAuthorization,
+                            Method method,
+                            Object instance) {
+                this(httpMethod, splitPath(path), requiresAuthorization, method, instance);
+            }
         }
-    }
 
     private record RouteMatch(RouteDefinition route, Map<String, String> pathParams) {
     }
