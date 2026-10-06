@@ -90,6 +90,7 @@ public class PersistentDao<T> implements Dao<T> {
 
     private void loadFromFile() throws IOException {
         log.seek(0);
+        byte[] data;
         while (log.getFilePointer() < log.length()) {
             try {
                 String operation = log.readUTF();
@@ -97,7 +98,7 @@ public class PersistentDao<T> implements Dao<T> {
 
                 if ("PUT".equals(operation)) {
                     int length = log.readInt();
-                    byte[] data = new byte[length];
+                    data = new byte[length];
                     log.readFully(data);
                     storage.put(key, serializer.deserialize(data));
                 } else if ("DELETE".equals(operation)) {
