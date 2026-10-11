@@ -33,7 +33,6 @@ public class EPUrlShortenerService implements UrlShortenerService {
         final String baseUrl = "http://127.0.0.1:" + port;
 
         this.userDao = new PersistentDao<>(USERS_STORAGE_FILE, PersistentDao.stringSerializer());
-        this.urlDao = null;
         this.started = false;
 
         AuthorizationService authService = new AuthorizationService(userDao);
