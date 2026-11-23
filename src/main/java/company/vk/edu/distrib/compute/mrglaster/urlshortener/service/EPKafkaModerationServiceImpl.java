@@ -34,11 +34,14 @@ public class EPKafkaModerationServiceImpl implements ModerationService {
     private static final Duration POLL_TIMEOUT = Duration.ofMillis(200);
     private static final int SEND_TIMEOUT_SECONDS = 10;
 
+    private enum Lifecycle { IDLE, RUNNING }
+
     private final String bootstrapServers;
     private final Set<String> bannedWords;
     private final Lock lifecycleLock = new ReentrantLock();
     private final AtomicBoolean running = new AtomicBoolean();
 
+    private Lifecycle lifecycle = Lifecycle.IDLE;
     private Thread worker;
     private KafkaConsumer<String, String> consumer;
 
@@ -51,13 +54,14 @@ public class EPKafkaModerationServiceImpl implements ModerationService {
     public void start() {
         lifecycleLock.lock();
         try {
-            if (worker != null) {
+            if (lifecycle == Lifecycle.RUNNING) {
                 throw new IllegalStateException("Moderation service has already started");
             }
             consumer = new KafkaConsumer<>(KafkaModerationConfig.getConsumerProperties(bootstrapServers));
             consumer.subscribe(List.of(CREATED_TOPIC));
             running.set(true);
             worker = Thread.ofVirtual().name("ep-moderation").start(this::consume);
+            lifecycle = Lifecycle.RUNNING;
         } finally {
             lifecycleLock.unlock();
         }
@@ -67,7 +71,7 @@ public class EPKafkaModerationServiceImpl implements ModerationService {
     public void stop() {
         lifecycleLock.lock();
         try {
-            if (worker == null) {
+            if (lifecycle != Lifecycle.RUNNING) {
                 return;
             }
             running.set(false);
@@ -77,8 +81,7 @@ public class EPKafkaModerationServiceImpl implements ModerationService {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            worker = null;
-            consumer = null;
+            lifecycle = Lifecycle.IDLE;
         } finally {
             lifecycleLock.unlock();
         }
