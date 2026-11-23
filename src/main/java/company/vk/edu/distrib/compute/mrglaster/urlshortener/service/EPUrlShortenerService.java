@@ -106,7 +106,6 @@ public class EPUrlShortenerService implements UrlShortenerService {
             KafkaLinkModeration m = moderation;
             if (m != null) {
                 m.close();
-                moderation = null;
             }
             try {
                 userDao.close();
